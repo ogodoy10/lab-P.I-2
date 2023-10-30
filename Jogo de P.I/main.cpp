@@ -1,161 +1,181 @@
-#include <iostream>
+#include <allegro5/allegro.h> //inclui todas as bibliotecas que vai usar
+#include <allegro5/allegro_primitives.h>
+#include <allegro5/allegro_image.h>
+#include <allegro5/keyboard.h>
+#include <allegro5/mouse.h>
+#include "personagem.h"
 
-#include <allegro5/allegro5.h>//biblioteca padrao do allegro
-#include <allegro5/allegro_primitives.h>//biblioteca para desenhar formas na tela
-#include <allegro5/allegro_font.h>//biblioteca pra escrever na tela
+//structs dos personagens
+struct personagem soldado1;
+struct personagem inimigo1;
+struct personagem inimigo2;
 
-#define DISP_W 640//largura da tela
-#define DISP_H 480//altura da tela
+int main() {
+	al_init(); //inicia o allegro
+	al_init_image_addon(); //inicia a biblioteca de imagens 
+	
+    //instala o mouse, teclado e a bibilioteca para colocar formas geométricas na tela
+	al_install_keyboard();
+	al_install_mouse();
+	al_init_primitives_addon();
 
-//Codigo do teclado
-#define SEEN 1
-#define RELEASED 2
+    //cria a tela do jogo
+    ALLEGRO_DISPLAY* display = al_create_display(1000, 700);
+    al_set_window_position(display, 200, 200);
+    al_set_window_title(display, "Campo de Guerra");
 
-struct Circle
-{
-    int posX;
-    int posY;
-    int raio;
-};
+    
+    ALLEGRO_TIMER* timer = al_create_timer(1.0 / 20.0);
+
+    //geream todas as imagens do jogo
+    ALLEGRO_BITMAP* soldado = al_load_bitmap("./soldado1.png");  
+    ALLEGRO_BITMAP* fundo = al_load_bitmap("./fundo2.jpg");
+    ALLEGRO_BITMAP* veiculo1 = al_load_bitmap("./aviao1.png");
+    ALLEGRO_BITMAP* veiculo1_invertido = al_load_bitmap("./aviao1invertido.png");
+    ALLEGRO_BITMAP* veiculo2 = al_load_bitmap("./aviao2.png");
+    ALLEGRO_BITMAP* veiculo2_invertido = al_load_bitmap("./aviao2invertido.png");
+
+    //cria todos os eventos do allegro, incluindo o timer 
+    ALLEGRO_EVENT_QUEUE* event_queue = al_create_event_queue();
+    al_register_event_source(event_queue, al_get_display_event_source(display));
+    al_register_event_source(event_queue, al_get_timer_event_source(timer));
+    al_register_event_source(event_queue, al_get_keyboard_event_source());
+    al_register_event_source(event_queue, al_get_mouse_event_source());
+    al_start_timer(timer);
+
+    //especificações do struct soldado
+    soldado1.frame = 0.f;
+    soldado1.largura = 115.7;
+    soldado1.altura = 77; 
+    soldado1.pos_x = 0;
+    soldado1.pos_y = 580;
+    soldado1.current_frame_y = 0;
+    soldado1.time = 0;
+    int velocidade = 5;
+
+    //especificações dos aviões  
+    int v1X = 0;
+    int v1X_inverte = 900;
+    int v2X = 900;
+    int v2X_inverte = 0;
 
 
-int main()
-{
-    ALLEGRO_EVENT event;//representa o evento atual
-    bool done = false;//true quando a aplicacao for encerrada
-    bool logic = false;//true quando evento timer for acionado
-    int mouseClickPositionX = 0;//posicao x do mouse quando clicar
-    int mouseClickPositionY = 0;//posicao y do mouse quando clicar
+    while (true) {
+        ALLEGRO_EVENT event;
+        al_wait_for_event(event_queue, &event);
 
-    unsigned char key[ALLEGRO_KEY_MAX];//representa os inputs do teclado
-    memset(key, 0, sizeof(key));//limpa o array key
-
-
-    al_init();//inicializa o allegro
-
-    al_init_font_addon();//inicializa o font addon do allegro (necessario pra escrever na tela)
-    al_init_primitives_addon();//inicilaiza o primitives addon do allegro (necessario pra desenhar na tela)
-
-
-    al_install_keyboard();//installa o teclado pro allegro
-    al_install_mouse();//installa o mouse pro allegro
-
-
-    ALLEGRO_DISPLAY* display = al_create_display(DISP_W, DISP_H);//cria a tela
-    ALLEGRO_EVENT_QUEUE* queue = al_create_event_queue();//cria a fila de eventos
-    ALLEGRO_FONT* font = al_create_builtin_font();//cria o font
-    ALLEGRO_TIMER* timer = al_create_timer(1.0 / 60.0);//cria o timer
-
-
-    al_register_event_source(queue, al_get_display_event_source(display));//registra os eventos do display na fila
-    al_register_event_source(queue, al_get_timer_event_source(timer));//registra os eventos do timer na fila
-    al_register_event_source(queue, al_get_keyboard_event_source());//registra os eventos do teclado na fila
-    al_register_event_source(queue, al_get_mouse_event_source());//registra os eventos do mouse na fila
-
-    struct Circle circle = {DISP_W / 2, DISP_H / 2, 20 };//inicializa um circle (essa variavel representa o circulo desenhado na tela)
-
-    al_start_timer(timer);//inicializa o timer
-    //enquanto a aplicacao nao fechar faca
-    while (!done)
-    {
-        al_wait_for_event(queue, &event);//espera o proximo evento
-
-        //verifica o proximo evento
-        switch (event.type)
-        {
-            //Aciona qunado a tela e fechada
-        case ALLEGRO_EVENT_DISPLAY_CLOSE:
-            done = true;
-            break;
-
-            //Aciona qunado bate o timer
-        case ALLEGRO_EVENT_TIMER:
-            logic = true;
-            break;
-
-            //Aciona quando precionada alguma tecla
-        case ALLEGRO_EVENT_KEY_DOWN:
-            key[event.keyboard.keycode] = SEEN | RELEASED;
-            break;
-
-            //Aciona qunado solta alguma tecla
-        case ALLEGRO_EVENT_KEY_UP:
-            key[event.keyboard.keycode] &= RELEASED;
-            break;
-
-            //Aciona quando precionado algum botao do mouse
-        case ALLEGRO_EVENT_MOUSE_BUTTON_DOWN:
-            if (event.mouse.button & 1)//Quando o botao precionado for o esquerdo
-            {
-                mouseClickPositionX = event.mouse.x;
-                mouseClickPositionY = event.mouse.y;
-            }
+        //Fim do Programa
+        if (event.keyboard.keycode == ALLEGRO_KEY_ESCAPE) {
             break;
         }
 
-        if (logic)
-        {
-            //KEYBOARD
-            for (int i = 0; i < ALLEGRO_KEY_MAX; i++)
-            {
-                key[i] &= SEEN;
+        //Andando
+        if (event.keyboard.keycode == ALLEGRO_KEY_RIGHT || event.keyboard.keycode == ALLEGRO_KEY_D) {
+            //Movimentos pra direita
+            soldado1.current_frame_y = 0;
+            soldado1.pos_x += velocidade;
+            soldado1.frame += 0.2f;
+            if (soldado1.frame > 4) {
+                soldado1.frame -= 4;
             }
+            soldado1.time = 0;
+        }
+        else if (event.keyboard.keycode == ALLEGRO_KEY_LEFT || event.keyboard.keycode == ALLEGRO_KEY_A) {
+            if (soldado1.pos_x >= 0) {
+                //Movimentos pra esquerda
+                soldado1.current_frame_y = 0;
+                soldado1.pos_x -= velocidade;
+                soldado1.frame += 0.2f;
+                if (soldado1.frame > 4) {
+                    soldado1.frame -= 4;
+                }
+                soldado1.time = 0;
+            }
+        }
+        else if (event.keyboard.keycode == ALLEGRO_KEY_DOWN || event.keyboard.keycode == ALLEGRO_KEY_S) {
+            //Movimentos pra baixo
+            if (soldado1.pos_y <= 580) { //esse primeiro if faz com que o personagem n passe do chão
+                soldado1.current_frame_y = 0;
+                soldado1.pos_y += velocidade;
+                soldado1.frame += 0.2f;
+                if (soldado1.frame > 4) {
+                    soldado1.frame -= 4;
+                }
+                soldado1.time = 0;
+            }
+        }
+        else if (event.keyboard.keycode == ALLEGRO_KEY_UP || event.keyboard.keycode == ALLEGRO_KEY_W) {
+            //Movimentos pra cima
+            soldado1.current_frame_y = 0;
+            soldado1.pos_y -= velocidade;
+            soldado1.frame += 0.2f;
+            if (soldado1.frame > 4) {
+                soldado1.frame -= 4;
+            }
+            soldado1.time = 0;
+        }
+        else {
+            soldado1.time++;
+        }
+        //personagem parado
+        if (soldado1.time > 10) {
+            soldado1.current_frame_y = soldado1.altura * 3;
+            soldado1.frame += 0.1f;
+            if (soldado1.frame > 1) {
+                soldado1.frame -= 1;
+            }
+        }
+        if (soldado1.largura + soldado1.pos_x > 1000){
+            soldado1.pos_x = 0;
+        }
+        
 
-            //move o circulo pra direita sempre que precionada a tecla right (setinha pra direita)
-            if (key[ALLEGRO_KEY_D] || key[ALLEGRO_KEY_RIGHT])
-            {
-                circle.posX += 7.5;
-            }
-            //move o circulo pra esquerda sempre que precionada a tecla left (setinha pra esquerda)
-            if (key[ALLEGRO_KEY_A] || key[ALLEGRO_KEY_LEFT])
-            {
-                circle.posX -= 7.5; //controla a velocidade do circulo
-            }
-            if (key[ALLEGRO_KEY_W] || key[ALLEGRO_KEY_UP])
-            {
-                circle.posY -= 7.5;
-            }
-            if (key[ALLEGRO_KEY_S] || key[ALLEGRO_KEY_DOWN])
-            {
-                circle.posY += 7.5;
-            }
-            if (circle.posX + 18 >= 640) {
-                circle.posX -= 6.2;
-            }
-            if (circle.posX - 18 <= 0) {
-                circle.posX += 8.2;
-            }
-            if (circle.posY + 18 >= 480) {
-                circle.posY -= 6.2;
-            }
-            if (circle.posY - 18 <= 0) {
-                circle.posY += 8.2;
-            }
+        al_clear_to_color(al_map_rgb(0, 0, 0));
 
-            //DRAW
-            al_clear_to_color(al_map_rgb(0, 0, 0));//limpa a tela a recolorindo toda de preto
+        al_draw_scaled_bitmap(fundo, 0, 0, 1000, 700, 0, 0, 1000 * 2.0, 700 * 2.0, 0); //desenha o fundo na tela
 
-            al_draw_filled_circle(circle.posX, circle.posY, circle.raio, al_map_rgb(0, 0, 255));//desenha o circulo na tela
-            al_draw_textf(font, al_map_rgb(255, 255, 255), DISP_W / 100, 30, 0, "Voce clicou na posicao x: %d, y %d", mouseClickPositionX, mouseClickPositionY);//escreve na tela a posicao do mouse quando clicar na tela
+        al_draw_scaled_bitmap(soldado, soldado1.largura * (int)soldado1.frame, soldado1.current_frame_y, soldado1.largura, soldado1.altura, soldado1.pos_x,  soldado1.pos_y, soldado1.largura * 1.5, soldado1.altura * 1.5, 0); //desenha o soldado na tela 
+        
+        if (v1X < 1000) { //faz com que o avião percorra o caminho indo e voltando na tela
+            al_draw_bitmap(veiculo1, v1X, 100, 0); //desenha os aviões na tela
+            v1X += 5;
+        }
+        else{ 
+            al_draw_bitmap(veiculo1_invertido, v1X_inverte, 100, 0); 
+            v1X_inverte -= 5;
 
-            //al_draw_textf(font, al_map_rgb(255, 255, 255), DISP_W / 100, 30, 0, "Voce clicou na posicao x: %d y: %d", mouseClickPositionX, mouseClickPositionY);
-
-            al_flip_display();//atualiza a tela
-
-
-
-            logic = false;
+            if (v1X_inverte == -250) {
+                v1X = -250;
+                v1X_inverte = 900;
+            }
         }
 
 
+        if (v2X > -250) { //faz com que o avião percorra o caminho indo e voltando na tela
+            al_draw_bitmap(veiculo2, v2X, 0, 0); 
+            v2X -= 5;
+        }
+        else {
+            al_draw_bitmap(veiculo2_invertido, v2X_inverte, 0, 0); 
+            v2X_inverte += 5;
+
+            if (v2X_inverte == 1000) {  
+                v2X = 1000;
+                v2X_inverte = -250;             
+            }
+        }
+
+        al_flip_display();
     }
 
-    //Destroy tudo que foi criado pelo allegro
+
+    al_destroy_bitmap(veiculo1); 
+    al_destroy_bitmap(veiculo1_invertido);
+    al_destroy_bitmap(veiculo2);
+    al_destroy_bitmap(veiculo2_invertido);
+    al_destroy_bitmap(fundo);
+    al_destroy_bitmap(soldado);
     al_destroy_display(display);
-    al_destroy_event_queue(queue);
-    al_destroy_font(font);
+    al_destroy_event_queue(event_queue);
     al_destroy_timer(timer);
-
-
-    return 0;
 }
