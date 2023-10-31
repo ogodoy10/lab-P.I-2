@@ -111,14 +111,16 @@ int main() {
             }
         }
         else if (event.keyboard.keycode == ALLEGRO_KEY_UP || event.keyboard.keycode == ALLEGRO_KEY_W) {
+            if(soldado1.pos_y >= 525){ //faz com q a posição y do personagem n passe da altura da rua 
             //Movimentos pra cima
-            soldado1.current_frame_y = 0;
-            soldado1.pos_y -= velocidade;
-            soldado1.frame += 0.2f;
-            if (soldado1.frame > 4) {
-                soldado1.frame -= 4;
+                soldado1.current_frame_y = 0;
+                soldado1.pos_y -= velocidade;
+                soldado1.frame += 0.2f;
+                if (soldado1.frame > 4) {
+                    soldado1.frame -= 4;
+                }
+                soldado1.time = 0;
             }
-            soldado1.time = 0;
         }
         else {
             soldado1.time++;
