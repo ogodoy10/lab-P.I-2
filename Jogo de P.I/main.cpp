@@ -4,6 +4,7 @@
 #include <allegro5/keyboard.h>
 #include <allegro5/mouse.h>
 #include "personagem.h"
+#include <allegro5/allegro_font.h>
 
 //structs dos personagens
 struct personagem soldado1;
@@ -18,6 +19,7 @@ int main() {
 	al_install_keyboard();
 	al_install_mouse();
 	al_init_primitives_addon();
+    al_init_font_addon();
 
     //cria a tela do jogo
     ALLEGRO_DISPLAY* display = al_create_display(1000, 700);
@@ -26,10 +28,11 @@ int main() {
 
     
     ALLEGRO_TIMER* timer = al_create_timer(1.0 / 20.0);
+    ALLEGRO_FONT* font = al_create_builtin_font(); 
 
     //geream todas as imagens do jogo
     ALLEGRO_BITMAP* soldado = al_load_bitmap("./soldado1.png");  
-    ALLEGRO_BITMAP* fundo = al_load_bitmap("./fundo2.jpg");
+    ALLEGRO_BITMAP* fundo = al_load_bitmap("./fundo1.jpg");
     ALLEGRO_BITMAP* veiculo1 = al_load_bitmap("./aviao1.png");
     ALLEGRO_BITMAP* veiculo1_invertido = al_load_bitmap("./aviao1invertido.png");
     ALLEGRO_BITMAP* veiculo2 = al_load_bitmap("./aviao2.png");
@@ -52,6 +55,9 @@ int main() {
     soldado1.current_frame_y = 0;
     soldado1.time = 0;
     int velocidade = 5;
+
+    //especificações da câmera 
+    float camera_posX = 0;
 
     //especificações dos aviões  
     int v1X = 0;
@@ -125,17 +131,29 @@ int main() {
                 soldado1.frame -= 1;
             }
         }
-        if (soldado1.largura + soldado1.pos_x > 1000){
+        // faz com que o personagem ao passar dessa largura volte ao começo
+        if (soldado1.largura + soldado1.pos_x > 2789){
             soldado1.pos_x = 0;
         }
         
 
         al_clear_to_color(al_map_rgb(0, 0, 0));
 
-        al_draw_scaled_bitmap(fundo, 0, 0, 1000, 700, 0, 0, 1000 * 2.0, 700 * 2.0, 0); //desenha o fundo na tela
-
-        al_draw_scaled_bitmap(soldado, soldado1.largura * (int)soldado1.frame, soldado1.current_frame_y, soldado1.largura, soldado1.altura, soldado1.pos_x,  soldado1.pos_y, soldado1.largura * 1.5, soldado1.altura * 1.5, 0); //desenha o soldado na tela 
         
+        if (soldado1.pos_x < 1785) { //faz com que a câmera acompanhe o soldado até o fundo acabar e dps o soldado passa para outra fase
+            al_draw_scaled_bitmap(fundo, 0, 0, 2789, 700, - camera_posX, 0, 2789, 700, 0); //desenha o fundo na tela
+            al_draw_scaled_bitmap(soldado, soldado1.largura * (int)soldado1.frame, soldado1.current_frame_y, soldado1.largura, soldado1.altura, (soldado1.pos_x - camera_posX), soldado1.pos_y, soldado1.largura * 1.5, soldado1.altura * 1.5, 0); //desenha o soldado
+        }
+        else {
+            al_draw_scaled_bitmap(fundo, 0, 0, 2789, 700, - 1785, 0, 2789, 700, 0); 
+            al_draw_scaled_bitmap(soldado, soldado1.largura * (int)soldado1.frame, soldado1.current_frame_y, soldado1.largura, soldado1.altura, (soldado1.pos_x - 1785), soldado1.pos_y, soldado1.largura * 1.5, soldado1.altura * 1.5, 0); 
+        }
+
+        
+        al_draw_textf(font, al_map_rgb(255, 255, 255), 10, 10, 0, "soldado: (%d, %d)", soldado1.pos_x, soldado1.pos_y);
+
+        camera_posX = soldado1.pos_x; //a camera spwana junto com o soldado no começo da tela 
+
         if (v1X < 1000) { //faz com que o avião percorra o caminho indo e voltando na tela
             al_draw_bitmap(veiculo1, v1X, 100, 0); //desenha os aviões na tela
             v1X += 5;
