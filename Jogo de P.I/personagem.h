@@ -13,6 +13,7 @@ struct bala{
     int x;
     int y;
     float dx;
+    int morto;
 };
 
 struct inimigo{
@@ -25,4 +26,10 @@ struct inimigo{
     int time;
     int vida = 3;
     bool colisao;
+    int bala;
+};
+
+struct cones{
+    int x;
+    int y;
 };
