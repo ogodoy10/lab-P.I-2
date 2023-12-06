@@ -6,7 +6,7 @@ struct personagem {
     int pos_y;
     int current_frame_y;
     int time;
-    bool atirando = false; //variavel para o personagem atirar
+    bool atirando = false; 
 };
 
 struct bala{
@@ -14,6 +14,7 @@ struct bala{
     int y;
     float dx;
     int morto;
+    int vida = 1;
 };
 
 struct inimigo{
@@ -29,7 +30,9 @@ struct inimigo{
     int bala;
 };
 
-struct cones{
+struct cone{
     int x;
     int y;
+    int largura = 95;
+    int altura = 150;
 };

@@ -6,14 +6,14 @@
 #include "personagem.h"
 #include <allegro5/allegro_font.h>
 
-//FAZER OS INIMIGOS ATIRAREM E FAZER COM QUE A BALA QUE ACERTAR OS INIMIGOS DESAPAREÇAM 
+//FAZER COM QUE AS BALAS DOS INIMIGOS COLIDAM DIREITO COM O SOLDADO, FAZER COM QUE OS INIMIGOS ATIREM MAIS VEZES (5X) E FAZER O BOSS ANDAR, ATIRAR E FAZER ELE DESAPARECER AO COLIDIR 10 BALAS COM ELE 
 
 //structs dos personagens
 struct personagem soldado1;
 struct inimigo inimigos[7]; 
 struct bala balas[1500]; //QUANTIDADE DE BALAS DO SOLDADO 
 struct bala balaInimigo[1000]; //QUANTIDADE DE BALA DOS INIMIGOS 
-struct cones cones[4];
+struct cone cones[4];
 double last_shot_time = 0;
 double shot_delay = 0.5;
 
@@ -25,7 +25,7 @@ bool colisao(struct bala bala, struct inimigo inimigos) {
     if (bala.x < inimigos.x + inimigos.largura &&
         bala.x + 10 > inimigos.x &&
         bala.y < inimigos.y + inimigos.altura &&
-        bala.y + bala.y > inimigos.y) { //SE DER ERRO TIRA O + bala.y
+        bala.y + bala.y > inimigos.y) {
         // Colisão detectada
         return true;
     }
@@ -38,9 +38,9 @@ bool colisao(struct bala bala, struct inimigo inimigos) {
 bool colisaoSoldado(struct bala balaInimigo, struct personagem soldado1) {
     // Verifique a colisão
     if (balaInimigo.x < soldado1.pos_x + soldado1.largura &&
-        balaInimigo.x + 10 > soldado1.pos_x &&
+        balaInimigo.x + 10 > soldado1.pos_x  &&
         balaInimigo.y < soldado1.pos_y + soldado1.altura &&
-        balaInimigo.y + 2 > soldado1.pos_y) { // Ajustado para bala.y + 2
+        balaInimigo.y > soldado1.pos_y) { 
         // Colisão detectada
         return true;
     }
@@ -49,6 +49,18 @@ bool colisaoSoldado(struct bala balaInimigo, struct personagem soldado1) {
     return false;
 }
 
+
+bool colisaoCone(bala bala, cone cones) { //Colisão das balas com os cones
+    if (bala.x < cones.x + cones.largura &&
+        bala.x + 10 > cones.x &&
+        bala.y < cones.y + cones.altura &&
+        bala.y + 2 > cones.y) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
 
 int main() {
 	al_init(); //inicia o allegro
@@ -66,7 +78,7 @@ int main() {
     al_set_window_title(display, "Campo de Guerra");
 
     
-    ALLEGRO_TIMER* timer = al_create_timer(1.0 / 20.0);
+    ALLEGRO_TIMER* timer = al_create_timer(1.0 / 20.0); //FAZ RODAR OS EVENTOS A 20FPS
     ALLEGRO_FONT* font = al_create_builtin_font(); 
 
     //geram todas as imagens do jogo
@@ -88,26 +100,16 @@ int main() {
     al_register_event_source(event_queue, al_get_mouse_event_source()); 
     al_start_timer(timer);
 
-    //especificações do struct soldado
+    //especificações do soldado
     soldado1.frame = 0.f;
     soldado1.largura = 115.7;
     soldado1.altura = 77; 
     soldado1.pos_x = 0;
-    soldado1.pos_y = 580;
+    soldado1.pos_y = 575;
     soldado1.current_frame_y = 0;
     soldado1.time = 0;
-    int velocidade = 5; //NÃO ESQUECER DE MUDAR ANTES DA APRESENTAÇÃO (ALTERA PRA 2 SEU BURRO)
-
-    /* coordenadas de onde os inimigos tem que estar na tela 
-    x : 380  y : 580
-    x:500    y : 524
-    x : 1030 y : 580
-    x: 1250  y:524
-    x : 1420 y : 580
-    x : 1700 y : 524
-    x : 1700 y : 580
-    x : 2380 y : 540
-    */
+    int velocidade = 5; 
+    int knockback = 10;
 
     //especificações dos cones
     
@@ -121,80 +123,77 @@ int main() {
     cones[2].y = 630;
     
     cones[3].x = 1040;
-    cones[3].y = 630;
-
-    
-
+    cones[3].y = 625;
 
     //especificações inimigos 
-    inimigos[0].frame = 3;
-    inimigos[0].largura = 66;
-    inimigos[0].altura = 90; 
-    inimigos[0].current_frame_y = inimigos[0].altura * 1.2; //inimigos[i].frame += 0.1f;
+    inimigos[0].frame = 4;
+    inimigos[0].largura = 96;
+    inimigos[0].altura = 100; 
+    inimigos[0].current_frame_y = inimigos[0].altura * 2; 
     inimigos[0].time = 0;
     inimigos[0].x = 380;
-    inimigos[0].y = 620;
+    inimigos[0].y = 615;
     inimigos[0].vida;
 
     // Inimigo 1
-    inimigos[1].frame = 3;
-    inimigos[1].largura = 66;
-    inimigos[1].altura = 90;
-    inimigos[1].current_frame_y = inimigos[1].altura * 1.2;
+    inimigos[1].frame = 4;
+    inimigos[1].largura = 96;
+    inimigos[1].altura = 100;
+    inimigos[1].current_frame_y = inimigos[1].altura * 2;
     inimigos[1].time = 0;
     inimigos[1].x = 540;
-    inimigos[1].y = 680;
+    inimigos[1].y = 675;
     inimigos[1].vida;
 
-    // Inimigo 2
-    inimigos[2].frame = 3;
-    inimigos[2].largura = 66;
-    inimigos[2].altura = 90;
-    inimigos[2].current_frame_y = inimigos[2].altura * 1.2;
+    //// Inimigo 2
+    inimigos[2].frame = 4;
+    inimigos[2].largura = 96;
+    inimigos[2].altura = 100;
+    inimigos[2].current_frame_y = inimigos[2].altura * 2;
     inimigos[2].time = 0;
     inimigos[2].x = 1030;
     inimigos[2].y = 615;
     inimigos[2].vida;
 
-    // Inimigo 3
-    inimigos[3].frame = 3;
-    inimigos[3].largura = 66;
-    inimigos[3].altura = 90;
-    inimigos[3].current_frame_y = inimigos[3].altura * 1.2;
+    //// Inimigo 3
+    inimigos[3].frame = 4;
+    inimigos[3].largura = 96;
+    inimigos[3].altura = 100;
+    inimigos[3].current_frame_y = inimigos[3].altura * 2;
     inimigos[3].time = 0;
     inimigos[3].x = 1350;
     inimigos[3].y = 675;
     inimigos[3].vida;
 
-    // Inimigo 4
-    inimigos[4].frame = 3;
-    inimigos[4].largura = 66;
-    inimigos[4].altura = 90;
-    inimigos[4].current_frame_y = inimigos[4].altura * 1.2;
+    //// Inimigo 4
+    inimigos[4].frame = 4;
+    inimigos[4].largura = 96;
+    inimigos[4].altura = 100;
+    inimigos[4].current_frame_y = inimigos[4].altura * 2;
     inimigos[4].time = 0;
     inimigos[4].x = 1700;
     inimigos[4].y = 615;
     inimigos[4].vida;
 
-    // Inimigo 5
-    inimigos[5].frame = 3;
-    inimigos[5].largura = 66;
-    inimigos[5].altura = 90;
-    inimigos[5].current_frame_y = inimigos[5].altura * 1.2;
+    //// Inimigo 5
+    inimigos[5].frame = 4;
+    inimigos[5].largura = 96;
+    inimigos[5].altura = 100;
+    inimigos[5].current_frame_y = inimigos[5].altura * 2;
     inimigos[5].time = 0;
     inimigos[5].x = 1700;
     inimigos[5].y = 675;
     inimigos[5].vida;
 
-    // Inimigo 6
-    inimigos[6].frame = 3;
-    inimigos[6].largura = 66;
-    inimigos[6].altura = 90;
-    inimigos[6].current_frame_y = inimigos[6].altura * 1.2;
+    //// Inimigo 6
+    inimigos[6].frame = 4;
+    inimigos[6].largura = 96;
+    inimigos[6].altura = 100;
+    inimigos[6].current_frame_y = inimigos[6].altura * 2;
     inimigos[6].time = 0;
     inimigos[6].x = 2380;
     inimigos[6].y = 570;
-    inimigos[6].vida;
+    inimigos[6].vida = 10;
 
 
     //especificações da câmera 
@@ -216,12 +215,31 @@ int main() {
     int mouseX;
     int mouseY;
 
+    // Inicializa as balas dos inimigos
+    for (int i = 0; i < 7; i++) {
+        balaInimigo[i].dx = -5.0;  // As balas dos inimigos se movem para a esquerda
+
+        // Posição inicial das balas é a posição dos inimigos
+        balaInimigo[i].x = inimigos[i].x - camera_posX;
+
+        // Ajusta a altura inicial da bala com base na rua dos inimigos
+        if (i < 3) {  // Inimigos da rua de cima
+            balaInimigo[i].y = inimigos[i].y - 55;  // Altura ajustada para a rua de cima
+        }
+        else {  // Inimigos da rua de baixo
+            balaInimigo[i].y = inimigos[i].y - 25;  // Altura ajustada para a rua de baixo
+        }
+    }
+
+
+    int limiteKnockback = 0; //INIDICA O LIMITE DE ONDE O KNOCKBACK DO SOLDADO PODE IR 
+
     while (true) {
-        ALLEGRO_EVENT event;
-        al_wait_for_event(event_queue, &event);
+        ALLEGRO_EVENT event; //ARMAZENA EVENTOS, COMO ENTRADA DE TECLADO E MOUSE
+        al_wait_for_event(event_queue, &event); //BLOQUEIA O PROGRAMA ATÉ OCORRER UM EVENTO
         ALLEGRO_MOUSE_STATE state;  
-        al_get_mouse_state(&state);  
-        double current_time = al_get_time();
+        al_get_mouse_state(&state); //OBTÉM O ESTADO ATUAL DO MOUSE E SALVA NA VARIÁVEL STATE 
+        double current_time = al_get_time(); //RETORNA O TEMPO ATUAL EM SEGUNDOS DESDE QUE A BIBLIOTECA FOI INICIADA 
 
         mouseX = al_get_mouse_state_axis(&state, 0);
         mouseY = al_get_mouse_state_axis(&state, 1);
@@ -265,7 +283,7 @@ int main() {
         else if (event.keyboard.keycode == ALLEGRO_KEY_DOWN || event.keyboard.keycode == ALLEGRO_KEY_S) {
             velocidade = 5; 
             //Movimentos pra baixo
-            if (soldado1.pos_y <= 570) { //esse primeiro if faz com que o personagem n passe do chão
+            if (soldado1.pos_y <= 570) { //esse primeiro if faz com que o personagem não passe do chão
                 soldado1.current_frame_y = 0;
                 soldado1.pos_y += velocidade;
                 soldado1.frame += 0.2f;
@@ -277,7 +295,7 @@ int main() {
         }
         else if (event.keyboard.keycode == ALLEGRO_KEY_UP || event.keyboard.keycode == ALLEGRO_KEY_W) {
             velocidade = 5; 
-            if(soldado1.pos_y >= 525){ //faz com q a posição y do personagem n passe da altura da rua 
+            if(soldado1.pos_y >= 525){ //faz com q a posição y do personagem não passe da altura da rua 
             //Movimentos pra cima
                 soldado1.current_frame_y = 0;
                 soldado1.pos_y -= velocidade;
@@ -310,7 +328,7 @@ int main() {
                     last_bullet_x = balas[num_balas].x;
                     num_balas++;
 
-                    last_shot_time = current_time;
+                    last_shot_time = current_time; //O TEMPO DA ÚLTIMA BALA DO SOLDADO VAI SER O TEMPO ATUAL DO CURRENT TIME 
                 }
             }
         }
@@ -325,53 +343,45 @@ int main() {
             }
         }
 
-        for(int i = 0; i < 7; i++){
-            if (inimigos[i].time > 10) {
-                inimigos[i].current_frame_y = inimigos[i].altura * 1;
-                inimigos[i].frame += 0.1f;
-                if (inimigos[i].frame > 1) {
-                    inimigos[i].frame -= 1;
-                }
-            }
-        }
-
         
-        if (event.type == ALLEGRO_EVENT_MOUSE_BUTTON_UP) {
+        if (event.type == ALLEGRO_EVENT_MOUSE_BUTTON_UP) { //Serve para saber se o usuário clicou no botão de jogar
             if((mouseX > 331 && mouseX < 675) && (mouseY > 393 && mouseY < 488)){
                 displayMode = 1;
             }
         }
 
-        al_clear_to_color(al_map_rgb(0, 0, 0));
+        al_clear_to_color(al_map_rgb(0, 0, 0)); //LIMPA A TELA 
 
         if (displayMode == 0) { //serve para exibir o menu na tela
             al_draw_bitmap(menu, 0, 0, 0);
         }
 
         if (displayMode == 1) { //faz com que ao usuario clicar o menu saia e comece o jogo
-            if (soldado1.pos_x == 6500) {
+            
+            if (soldado1.pos_x == 6485) {//faz o jogo reiniciar ao usuario passar dessa coordenada
                 displayMode = 0;
                 soldado1.pos_x = 0;
             }
 
-            
-            if (soldado1.pos_x < 5580) { //faz com que a câmera acompanhe o soldado até o fundo acabar e dps o soldado passa para outra fase 
+            if (soldado1.pos_x < 5580) {  
+                al_draw_scaled_bitmap(fundo, 0, 0, 3310, 700, -camera_posX, 0, 3310 * 2, 401 * 3.1, 0); //desenha o fundo na tela
+            }
+                
+            //COLISÃO DOS CONES DE CIMA 
+            for (int i = 0; i < 2; i++) {
+                al_draw_scaled_bitmap(cone, 0, 0, 95, 150, (cones[i].x - camera_posX), cones[i].y, 95 / 2, 150 / 2, 0);
+                // Verifica a colisão
+                if (soldado1.pos_x < cones[i].x + 95 &&
+                    soldado1.pos_x + soldado1.largura > cones[i].x &&
+                    soldado1.pos_y < cones[i].y + 1 &&
+                    soldado1.pos_y + soldado1.altura > cones[i].y &&
+                    soldado1.pos_y == 520) {
 
-                al_draw_scaled_bitmap(fundo, 0, 0, 3310, 700, - camera_posX, 0, 3310 * 2, 401 * 3.1, 0); //desenha o fundo na tela
-               
-                for (int i = 0; i < 2; i++) {
-                    al_draw_scaled_bitmap(cone, 0, 0, 95, 150, (cones[i].x - camera_posX), cones[i].y, 95 / 2, 150 / 2, 0);
-                    // Verifica a colisão
-                    if (soldado1.pos_x < cones[i].x + 95 &&
-                        soldado1.pos_x + soldado1.largura > cones[i].x &&
-                        soldado1.pos_y < cones[i].y + 1 &&
-                        soldado1.pos_y + soldado1.altura > cones[i].y && 
-                        soldado1.pos_y == 520) {
-                    
-                        velocidade = 0;
-                    }
+                    velocidade = 0;
                 }
+            }
 
+            if (soldado1.pos_x < 5580) {
                 al_draw_scaled_bitmap(soldado, soldado1.largura * (int)soldado1.frame, soldado1.current_frame_y, soldado1.largura, soldado1.altura, (soldado1.pos_x - camera_posX), soldado1.pos_y, soldado1.largura * 1.5, soldado1.altura * 1.5, 0); //desenha o soldado na tela
                
                 //BOSS
@@ -383,8 +393,7 @@ int main() {
                 al_draw_scaled_bitmap(soldado, soldado1.largura* (int)soldado1.frame, soldado1.current_frame_y, soldado1.largura, soldado1.altura, (soldado1.pos_x - 5580), soldado1.pos_y, soldado1.largura * 1.5, soldado1.altura * 1.5, 0);
             }
 
-
-            //COLISÃO DOS CONES 
+            //COLISÃO DOS CONES DEBAIXO
             for (int i = 2; i < 4; i++) {
                 al_draw_scaled_bitmap(cone, 0, 0, 95, 150, (cones[i].x - camera_posX), cones[i].y, 95 / 2, 150 / 2, 0);
                 // Verifica a colisão
@@ -392,7 +401,7 @@ int main() {
                     soldado1.pos_x + soldado1.largura > cones[i].x &&
                     soldado1.pos_y < cones[i].y + 1 &&
                     soldado1.pos_y + soldado1.altura > cones[i].y &&
-                    soldado1.pos_y == 580) {
+                    soldado1.pos_y == 575) {
 
                     velocidade = 0;
                 }
@@ -400,46 +409,79 @@ int main() {
 
 
             // DESENHA OS INIMIGOS NA TELA EM SUAS COORDENADAS
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < 3; i++) { //DESENHA OS INIMIOGOS DA RUA DE CIMA 
                 if (inimigos[i].vida > 0) { // Verifica se o inimigo está vivo antes de desenhá-lo
                     al_draw_scaled_bitmap(inimigo, inimigos[i].largura * (int)inimigos[i].frame, inimigos[i].current_frame_y, inimigos[i].largura, inimigos[i].altura, (inimigos[i].x - camera_posX), inimigos[i].y - inimigos[i]. altura, inimigos[i].largura * 1.2, inimigos[i].altura * 1.2, 0);
                 }
             }
 
-            for (int i = 3; i < 6; i++) {
-                if (inimigos[i].vida > 0) { // Verifica se o inimigo está vivo antes de desenhá-lo
+            for (int i = 3; i < 6; i++) { //DESENHA OS INIMIGOS DA RUA DEBAIXO
+                if (inimigos[i].vida > 0) { 
                     al_draw_scaled_bitmap(inimigo, inimigos[i].largura * (int)inimigos[i].frame, inimigos[i].current_frame_y, inimigos[i].largura, inimigos[i].altura, (inimigos[i].x - camera_posX), inimigos[i].y - inimigos[i].altura, inimigos[i].largura * 1.2, inimigos[i].altura * 1.2, 0);
                 }
             }
 
 
-            //DESENHA AS BALAS
-                for (int i = 1; i < num_balas; i++) {
-                    balas[i].x += balas[i].dx;
+            //DESENHA AS BALAS E COLISÃO DAS BALAS DO SOLDADO COM O INIMIGO
+            for (int i = 1; i < num_balas; i++) {
+                balas[i].x += balas[i].dx;
 
-                    // Ajusta a posição da bala com base na posição da câmera, não faz a bala surgir pra frente do personagem 
-                    float ajustaBala = balas[i].x - camera_posX;
+                // Ajusta a posição da bala com base na posição da câmera, não faz a bala surgir pra frente do personagem 
+                float ajustaBala = balas[i].x - camera_posX;
 
-                    al_draw_line(ajustaBala, balas[i].y, ajustaBala + 10, balas[i].y, al_map_rgb(255, 255, 0), 2.0);
+                al_draw_line(ajustaBala, balas[i].y, ajustaBala + 10, balas[i].y, al_map_rgb(255, 255, 0), 2.0);
 
-                    // Verifica se a bala colidiu com algum inimigo
-                    for (int j = 0; j < 7; j++) {
-                        // Verifica a colisão apenas se a vida do inimigo for maior que 0
-                        if (inimigos[j].vida > 0 && colisao(balas[i], inimigos[j])) {
-                            // Decrementa a vida do inimigo
-                            inimigos[j].vida--;
+                // COLISÃO DAS BALAS DO SOLDADO COM O INIMIGO
+                for (int j = 0; j < 7; j++) {
+                    // Verifica a colisão apenas se a vida do inimigo for maior que 0
+                    if (inimigos[j].vida > 0 && colisao(balas[i], inimigos[j])) {
+                        // Decrementa a vida do inimigo
+                        inimigos[j].vida--;
+                    
+                        if (colisao(balas[i], inimigos[j])) {
+                            balas[i].x = -30000; // Move a bala para fora da tela
                         }
                     }
-                }
 
-            // Verifica colisão da bala do inimigo com o jogador
-            for (int i = 0; i < 7; i++) {
-                if (inimigos[i].vida > 0 && colisaoSoldado(balaInimigo[i], soldado1)) {
-                    // o soldado fica indo 10px pra trás a cada tiro recebido
-                    soldado1.pos_x -= 10;
                 }
             }
 
+        
+
+            //COLISÃO DAS BALAS DOS INIMIGOS COM O SOLDADO
+            for (int i = 0; i < 7; i++) {
+                // Verifica se o inimigo está vivo antes de atirar
+                if (inimigos[i].vida > 0 && colisaoSoldado(balaInimigo[i], soldado1)) {
+                    soldado1.pos_x -= knockback;//faz o soldado tomar knockback
+
+                    balaInimigo[i].x += balaInimigo[i].dx;
+                    al_draw_line(balaInimigo[i].x, balaInimigo[i].y, balaInimigo[i].x, balaInimigo[i].y, al_map_rgb(255, 0, 0), 2.0);
+
+                    // Verifica se a bala colidiu com o soldado
+                    if (colisaoSoldado(balaInimigo[i], soldado1)) {
+                        balaInimigo[i].x = -1000; // Move a bala para fora da tela
+                    }
+
+                    // Para o knockback depois de um certo limite
+                    if (soldado1.pos_x <= limiteKnockback) {
+                        soldado1.pos_x = limiteKnockback;
+                    }
+                }
+            }
+
+
+
+            //COLISÃO DAS BALAS COM OS CONES
+            for (int i = 0; i < 7; i++) {
+                for (int j = 0; j < 4; j++) {
+                    if (balaInimigo[i].vida > 0 && colisaoCone(balaInimigo[i], cones[j])) {
+                        // A bala desaparece ao atingir o cone
+                        balaInimigo[i].vida = 0;
+                    }
+                }
+            }
+
+            //FAZ OS INIMIGOS ATIRAREM 
             for (int i = 0; i < 7; i++) {
                 // Verifica se o inimigo está vivo antes de atirar
                 if (inimigos[i].vida > 0) {
@@ -497,7 +539,7 @@ int main() {
         }
 
 
-        al_flip_display();
+        al_flip_display(); //ATUALIZA A TELA
     }
 
 
