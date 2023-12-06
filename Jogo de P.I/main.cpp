@@ -12,7 +12,8 @@
 struct personagem soldado1;
 struct inimigo inimigos[7]; 
 struct bala balas[1500]; //QUANTIDADE DE BALAS DO SOLDADO 
-struct bala balaInimigo[1000]; //QUANTIDADE DE BALA DOS INIMIGOS 
+struct bala balaInimigo[1000]; //QUANTIDADE DE BALA DOS INIMIGOS
+struct inimigo chefe; 
 struct cone cones[4];
 double last_shot_time = 0;
 double shot_delay = 0.5;
@@ -91,6 +92,7 @@ int main() {
     ALLEGRO_BITMAP* inimigo = al_load_bitmap("./inimigoF.png");
     ALLEGRO_BITMAP* menu = al_load_bitmap("menu.jpg");
     ALLEGRO_BITMAP* cone = al_load_bitmap("./cone.png");
+    ALLEGRO_BITMAP* boss = al_load_bitmap("./boss.png");
 
     //cria todos os eventos do allegro, incluindo o timer 
     ALLEGRO_EVENT_QUEUE* event_queue = al_create_event_queue();
@@ -195,6 +197,17 @@ int main() {
     inimigos[6].y = 570;
     inimigos[6].vida = 10;
 
+
+    chefe.frame = 3;
+    chefe.largura = 178;
+    chefe.altura = 190;
+    chefe.current_frame_y = chefe.altura * 0;
+    chefe.time = 0;
+    chefe.x = 2380;
+    chefe.y = 690;
+    chefe.vida = 10;
+
+    int inimigoAtirando = 0; // Variável para controlar qual inimigo está atirando
 
     //especificações da câmera 
     float camera_posX = 0;
@@ -384,14 +397,30 @@ int main() {
             if (soldado1.pos_x < 5580) {
                 al_draw_scaled_bitmap(soldado, soldado1.largura * (int)soldado1.frame, soldado1.current_frame_y, soldado1.largura, soldado1.altura, (soldado1.pos_x - camera_posX), soldado1.pos_y, soldado1.largura * 1.5, soldado1.altura * 1.5, 0); //desenha o soldado na tela
                
-                //BOSS
-                al_draw_scaled_bitmap(inimigo, inimigos[6].largura* (int)inimigos[6].frame, inimigos[6].current_frame_y, inimigos[6].largura, inimigos[6].altura, 2380 - camera_posX, inimigos[6].y - inimigos[6].altura, inimigos[6].largura * 1.8, inimigos[6].altura * 1.9, 0);
+                if (inimigos[6].vida == 0) {
+
+                    chefe.frame -= 0.2f;
+                    if (chefe.frame < 0) {
+                        chefe.frame = 0;
+                    }
+                    chefe.time = 0;
+                    //BOSS MORRENDO 
+                    al_draw_scaled_bitmap(boss, chefe.largura* (int)chefe.frame, chefe.current_frame_y, chefe.largura, chefe.altura, 2380 - camera_posX, chefe.y - chefe.altura, chefe.largura, chefe.altura, 0);
+                }
+                else {
+                    //BOSS FICANDO 
+                    al_draw_scaled_bitmap(inimigo, inimigos[6].largura * (int)inimigos[6].frame, inimigos[6].current_frame_y, inimigos[6].largura, inimigos[6].altura, 2380 - camera_posX, inimigos[6].y - inimigos[6].altura, inimigos[6].largura * 1.8, inimigos[6].altura * 1.9, 0);
+                
+                }
             }
             else {
                 al_draw_scaled_bitmap(fundo, 0, 0, 3310, 700, -5580, 0, 3310 * 2, 401 * 3.1, 0);
                 
                 al_draw_scaled_bitmap(soldado, soldado1.largura* (int)soldado1.frame, soldado1.current_frame_y, soldado1.largura, soldado1.altura, (soldado1.pos_x - 5580), soldado1.pos_y, soldado1.largura * 1.5, soldado1.altura * 1.5, 0);
             }
+
+
+            
 
             //COLISÃO DOS CONES DEBAIXO
             for (int i = 2; i < 4; i++) {
@@ -483,11 +512,21 @@ int main() {
 
             //FAZ OS INIMIGOS ATIRAREM 
             for (int i = 0; i < 7; i++) {
-                // Verifica se o inimigo está vivo antes de atirar
-                if (inimigos[i].vida > 0) {
-                    // Lógica para mover e desenhar a bala do inimigo
+                // Verifica se o inimigo está vivo e se é o inimigo que está atirando no momento
+                if (inimigos[i].vida > 0 && i == inimigoAtirando) {
+
                     balaInimigo[i].x += balaInimigo[i].dx;
                     al_draw_line(balaInimigo[i].x, balaInimigo[i].y, balaInimigo[i].x + 10, balaInimigo[i].y, al_map_rgb(255, 0, 0), 2.0);
+
+                    // Verifica se a bala do inimigo saiu da tela
+                    if (balaInimigo[i].x < 0) {
+                        // Reinicia a posição da bala para o início
+                        balaInimigo[i].x = inimigos[i].x;
+                        balaInimigo[i].y = inimigos[i].y;
+
+                        // Muda para o próximo inimigo atirar
+                        inimigoAtirando = (inimigoAtirando + 1) % 7;
+                    }
                 }
             }
 
@@ -550,6 +589,7 @@ int main() {
     al_destroy_bitmap(fundo);
     al_destroy_bitmap(soldado);
     al_destroy_bitmap(inimigo);
+    al_destroy_bitmap(boss);
     al_destroy_bitmap(cone);
     al_destroy_display(display);
     al_destroy_event_queue(event_queue);
